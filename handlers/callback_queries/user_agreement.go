@@ -10,6 +10,7 @@ import (
 	"shop-bot/internal/logger"
 	"shop-bot/services"
 	"shop-bot/utils"
+	"time"
 )
 
 type IUserAgreementHandler interface {
@@ -24,21 +25,21 @@ type userAgreementHandlerDependencies struct {
 	UserService services.IUserService `name:"UserService"`
 }
 
-type UserAgreementHandler struct {
+type userAgreementHandler struct {
 	logger      logger.ILogger
 	textService services.ITextService
 	userService services.IUserService
 }
 
-func NewUserAgreementHandler(deps userAgreementHandlerDependencies) *UserAgreementHandler {
-	return &UserAgreementHandler{
+func NewUserAgreementHandler(deps userAgreementHandlerDependencies) *userAgreementHandler {
+	return &userAgreementHandler{
 		logger:      deps.Logger,
 		textService: deps.TextService,
 		userService: deps.UserService,
 	}
 }
 
-func (h *UserAgreementHandler) Handle(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
+func (h *userAgreementHandler) Handle(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
 	answerResult := utils.MustAnswerCallbackQuery(ctx, b, update)
 
 	if !answerResult {
@@ -53,7 +54,7 @@ func (h *UserAgreementHandler) Handle(ctx context.Context, b *tg_bot.Bot, update
 	h.process(ctx, b, update)
 }
 
-func (h *UserAgreementHandler) process(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
+func (h *userAgreementHandler) process(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
 	switch update.CallbackQuery.Data {
 	case constants.CallbackDataUserAgreementShow:
 		h.showUserAgreement(ctx, b, update)
@@ -64,7 +65,7 @@ func (h *UserAgreementHandler) process(ctx context.Context, b *tg_bot.Bot, updat
 	}
 }
 
-func (h *UserAgreementHandler) showUserAgreement(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
+func (h *userAgreementHandler) showUserAgreement(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
 	kb := &tg_bot_models.InlineKeyboardMarkup{
 		InlineKeyboard: constants.InlineKeyBoardUserAgreement,
 	}
@@ -76,7 +77,8 @@ func (h *UserAgreementHandler) showUserAgreement(ctx context.Context, b *tg_bot.
 	})
 }
 
-func (h *UserAgreementHandler) acceptUserAgreement(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
+func (h *userAgreementHandler) acceptUserAgreement(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
+	time.Sleep(20 * time.Second)
 	userId := utils.GetUserID(update)
 	chatId := utils.GetChatID(update)
 
@@ -96,7 +98,7 @@ func (h *UserAgreementHandler) acceptUserAgreement(ctx context.Context, b *tg_bo
 	})
 }
 
-func (h *UserAgreementHandler) declineUserAgreement(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
+func (h *userAgreementHandler) declineUserAgreement(ctx context.Context, b *tg_bot.Bot, update *tg_bot_models.Update) {
 	userId := utils.GetUserID(update)
 	chatId := utils.GetChatID(update)
 

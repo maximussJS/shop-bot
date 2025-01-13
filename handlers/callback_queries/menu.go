@@ -24,21 +24,21 @@ type MenuHandlerDependencies struct {
 	UserService services.IUserService `name:"UserService"`
 }
 
-type MenuHandler struct {
+type menuHandler struct {
 	logger      logger.ILogger
 	textService services.ITextService
 	userService services.IUserService
 }
 
-func NewMenuHandler(deps MenuHandlerDependencies) *MenuHandler {
-	return &MenuHandler{
+func NewMenuHandler(deps MenuHandlerDependencies) *menuHandler {
+	return &menuHandler{
 		logger:      deps.Logger,
 		textService: deps.TextService,
 		userService: deps.UserService,
 	}
 }
 
-func (h *MenuHandler) Handle(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
+func (h *menuHandler) Handle(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 	answerResult := utils.MustAnswerCallbackQuery(ctx, b, update)
 
 	if !answerResult {
@@ -53,14 +53,14 @@ func (h *MenuHandler) Handle(ctx context.Context, b *tg_bot.Bot, update *models.
 	h.process(ctx, b, update)
 }
 
-func (h *MenuHandler) process(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
+func (h *menuHandler) process(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 	switch update.CallbackQuery.Data {
 	case constants.CallbackDataShowMenu:
 		h.showMenu(ctx, b, update)
 	}
 }
 
-func (h *MenuHandler) showMenu(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
+func (h *menuHandler) showMenu(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 	userId := utils.GetUserID(update)
 
 	if h.userService.IsUserNotExists(ctx, userId) {

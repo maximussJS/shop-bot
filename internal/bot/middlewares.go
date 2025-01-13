@@ -23,52 +23,59 @@ func (bot *Bot) logMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
 	}
 }
 
-func (bot *Bot) requestTimeoutMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
+func (bot *Bot) timeoutMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
 	return func(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 		timeoutDuration := bot.config.RequestTimeout()
-
 		bot.logger.Debug(fmt.Sprintf("Request timeout: %s", timeoutDuration))
 
-		childContext, cancel := context.WithTimeout(ctx, timeoutDuration)
+		childCtx, cancel := context.WithTimeout(ctx, timeoutDuration)
 		defer cancel()
 
 		doneCh := make(chan struct{})
 
 		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					chatId := utils.GetChatID(update)
-					stackSize := bot.config.ErrorStackTraceSizeInKb() << 10
-					stack := make([]byte, stackSize)
-					length := runtime.Stack(stack, true)
-					stack = stack[:length]
-
-					if childContext.Err() != nil {
-						return
-					}
-
-					bot.logger.Error(fmt.Sprintf("[PANIC RECOVER] %v %s\n", err, stack[:length]))
-
-					b.SendMessage(ctx, &tg_bot.SendMessageParams{
-						ChatID: chatId,
-						Text:   "An error occurred while processing your request. Please try again later.",
-					})
-				}
-				close(doneCh)
-			}()
-
-			next(childContext, b, update)
+			next(childCtx, b, update)
+			close(doneCh)
 		}()
 
 		select {
-		case <-childContext.Done():
+		case <-childCtx.Done():
+			// When the timeout occurs, send a timeout message.
 			utils.MustSendMessage(ctx, b, &tg_bot.SendMessageParams{
 				ChatID: utils.GetChatID(update),
 				Text:   "Request timeout exceeded. Please try again later.",
 			})
 			return
 		case <-doneCh:
+			// The next handler finished before the timeout.
 			return
 		}
+	}
+}
+
+func (bot *Bot) panicRecoveryMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
+	return func(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
+		defer func() {
+			if err := recover(); err != nil {
+				chatID := utils.GetChatID(update)
+				stackSize := bot.config.ErrorStackTraceSizeInKb() << 10
+				stack := make([]byte, stackSize)
+				length := runtime.Stack(stack, true)
+				stack = stack[:length]
+
+				if ctx.Err() != nil {
+					return
+				}
+
+				bot.logger.Error(fmt.Sprintf("[PANIC RECOVER] %v %s\n", err, stack))
+
+				b.SendMessage(ctx, &tg_bot.SendMessageParams{
+					ChatID: chatID,
+					Text:   "An error occurred while processing your request. Please try again later.",
+				})
+			}
+		}()
+
+		next(ctx, b, update)
 	}
 }

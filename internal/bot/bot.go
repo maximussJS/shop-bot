@@ -58,7 +58,7 @@ func StartBot(deps botDependencies) {
 
 	opts := []tg_bot.Option{
 		tg_bot.WithDefaultHandler(bot.defaultHandler.Handle),
-		tg_bot.WithMiddlewares(bot.requestTimeoutMiddleware, bot.logMiddleware),
+		tg_bot.WithMiddlewares(bot.timeoutMiddleware, bot.panicRecoveryMiddleware, bot.logMiddleware),
 	}
 
 	tgBot, err := tg_bot.New(deps.Config.BotToken(), opts...)
