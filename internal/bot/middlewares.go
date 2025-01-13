@@ -9,7 +9,7 @@ import (
 	"shop-bot/utils"
 )
 
-func (bot *Bot) logMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
+func (bot *bot) logMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
 	return func(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 		if update.Message != nil {
 			bot.logger.Log(fmt.Sprintf("%d say: %s", update.Message.From.ID, update.Message.Text))
@@ -23,7 +23,7 @@ func (bot *Bot) logMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
 	}
 }
 
-func (bot *Bot) timeoutMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
+func (bot *bot) timeoutMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
 	return func(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 		timeoutDuration := bot.config.RequestTimeout()
 		bot.logger.Debug(fmt.Sprintf("Request timeout: %s", timeoutDuration))
@@ -40,20 +40,18 @@ func (bot *Bot) timeoutMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
 
 		select {
 		case <-childCtx.Done():
-			// When the timeout occurs, send a timeout message.
 			utils.MustSendMessage(ctx, b, &tg_bot.SendMessageParams{
 				ChatID: utils.GetChatID(update),
 				Text:   "Request timeout exceeded. Please try again later.",
 			})
 			return
 		case <-doneCh:
-			// The next handler finished before the timeout.
 			return
 		}
 	}
 }
 
-func (bot *Bot) panicRecoveryMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
+func (bot *bot) panicRecoveryMiddleware(next tg_bot.HandlerFunc) tg_bot.HandlerFunc {
 	return func(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 		defer func() {
 			if err := recover(); err != nil {

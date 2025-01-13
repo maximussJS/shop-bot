@@ -16,28 +16,28 @@ type ICommandHandler interface {
 	Start(ctx context.Context, b *tg_bot.Bot, update *models.Update)
 }
 
-type CommandHandlerDependencies struct {
+type commandHandlerDependencies struct {
 	dig.In
 
 	TextService services.ITextService `name:"TextService"`
 }
 
-type CommandHandler struct {
+type commandHandler struct {
 	startLogoData []byte
 	textService   services.ITextService
 }
 
-func NewCommandHandler(deps CommandHandlerDependencies) *CommandHandler {
+func NewCommandHandler(deps commandHandlerDependencies) *commandHandler {
 	fileData, errReadFile := os.ReadFile("./images/facebook.png")
 	utils.PanicIfError(errReadFile)
 
-	return &CommandHandler{
+	return &commandHandler{
 		startLogoData: fileData,
 		textService:   deps.TextService,
 	}
 }
 
-func (c *CommandHandler) Start(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
+func (c *commandHandler) Start(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 	captionText := c.textService.WelcomeMessage(update.Message.From.FirstName)
 
 	kb := &models.InlineKeyboardMarkup{

@@ -16,7 +16,7 @@ type IMenuHandler interface {
 	Handle(ctx context.Context, b *tg_bot.Bot, update *models.Update)
 }
 
-type MenuHandlerDependencies struct {
+type menuHandlerDependencies struct {
 	dig.In
 
 	Logger      logger.ILogger        `name:"Logger"`
@@ -30,7 +30,7 @@ type menuHandler struct {
 	userService services.IUserService
 }
 
-func NewMenuHandler(deps MenuHandlerDependencies) *menuHandler {
+func NewMenuHandler(deps menuHandlerDependencies) *menuHandler {
 	return &menuHandler{
 		logger:      deps.Logger,
 		textService: deps.TextService,

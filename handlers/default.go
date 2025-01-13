@@ -11,13 +11,13 @@ type IDefaultHandler interface {
 	Handle(ctx context.Context, b *tg_bot.Bot, update *models.Update)
 }
 
-type DefaultHandler struct{}
+type defaultHandler struct{}
 
-func NewDefaultHandler() *DefaultHandler {
-	return &DefaultHandler{}
+func NewDefaultHandler() *defaultHandler {
+	return &defaultHandler{}
 }
 
-func (h *DefaultHandler) Handle(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
+func (h *defaultHandler) Handle(ctx context.Context, b *tg_bot.Bot, update *models.Update) {
 	_, err := b.SendMessage(ctx, &tg_bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
 		Text:      "Hello, *" + tg_bot.EscapeMarkdown(update.Message.From.FirstName) + "*" + "\n" + "Please use /start command to start the bot",

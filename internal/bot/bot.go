@@ -27,7 +27,7 @@ type botDependencies struct {
 	UserAgreementHandler callback_queries.IUserAgreementHandler `name:"UserAgreementHandler"`
 }
 
-type Bot struct {
+type bot struct {
 	shutdownWaitGroup *sync.WaitGroup
 	shutdownContext   context.Context
 
@@ -45,7 +45,7 @@ type Bot struct {
 func StartBot(deps botDependencies) {
 	defer deps.ShutdownWaitGroup.Done()
 
-	bot := &Bot{
+	bot := &bot{
 		shutdownWaitGroup:    deps.ShutdownWaitGroup,
 		shutdownContext:      deps.ShutdownContext,
 		logger:               deps.Logger,
@@ -69,7 +69,7 @@ func StartBot(deps botDependencies) {
 
 	registerHandlers(bot.bot, deps)
 
-	bot.logger.Log("Bot started")
+	bot.logger.Log("bot started")
 
 	bot.bot.Start(bot.shutdownContext)
 
@@ -78,12 +78,27 @@ func StartBot(deps botDependencies) {
 		bot.logger.Log("Shutting down bot gracefully...")
 	}
 
-	bot.logger.Log("Bot stopped")
+	bot.logger.Log("bot stopped")
 }
 
 func registerHandlers(bot *tg_bot.Bot, deps botDependencies) {
-	bot.RegisterHandler(tg_bot.HandlerTypeMessageText, constants.CommandStart, tg_bot.MatchTypeExact, deps.CommandsHandler.Start)
+	bot.RegisterHandler(
+		tg_bot.HandlerTypeMessageText,
+		constants.CommandStart,
+		tg_bot.MatchTypeExact,
+		deps.CommandsHandler.Start,
+	)
 
-	bot.RegisterHandler(tg_bot.HandlerTypeCallbackQueryData, constants.CallbackDataMenuPrefix, tg_bot.MatchTypePrefix, deps.MenuHandler.Handle)
-	bot.RegisterHandler(tg_bot.HandlerTypeCallbackQueryData, constants.CallbackDataUserAgreementPrefix, tg_bot.MatchTypePrefix, deps.UserAgreementHandler.Handle)
+	bot.RegisterHandler(
+		tg_bot.HandlerTypeCallbackQueryData,
+		constants.CallbackDataMenuPrefix,
+		tg_bot.MatchTypePrefix,
+		deps.MenuHandler.Handle,
+	)
+	bot.RegisterHandler(
+		tg_bot.HandlerTypeCallbackQueryData,
+		constants.CallbackDataUserAgreementPrefix,
+		tg_bot.MatchTypePrefix,
+		deps.UserAgreementHandler.Handle,
+	)
 }
