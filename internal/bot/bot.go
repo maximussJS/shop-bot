@@ -13,6 +13,10 @@ import (
 	"sync"
 )
 
+type IBot interface {
+	Start()
+}
+
 type botDependencies struct {
 	dig.In
 
@@ -42,10 +46,8 @@ type bot struct {
 	userAgreementHandler callback_queries.IUserAgreementHandler
 }
 
-func StartBot(deps botDependencies) {
-	defer deps.ShutdownWaitGroup.Done()
-
-	bot := &bot{
+func NewBot(deps botDependencies) *bot {
+	return &bot{
 		shutdownWaitGroup:    deps.ShutdownWaitGroup,
 		shutdownContext:      deps.ShutdownContext,
 		logger:               deps.Logger,
@@ -55,50 +57,59 @@ func StartBot(deps botDependencies) {
 		menuHandler:          deps.MenuHandler,
 		userAgreementHandler: deps.UserAgreementHandler,
 	}
+}
+
+func (bot *bot) Start() {
+	defer bot.shutdownWaitGroup.Done()
 
 	opts := []tg_bot.Option{
 		tg_bot.WithDefaultHandler(bot.defaultHandler.Handle),
 		tg_bot.WithMiddlewares(bot.timeoutMiddleware, bot.panicRecoveryMiddleware, bot.logMiddleware),
 	}
 
-	tgBot, err := tg_bot.New(deps.Config.BotToken(), opts...)
+	tgBot, err := tg_bot.New(bot.config.BotToken(), opts...)
 
 	utils.PanicIfError(err)
 
 	bot.bot = tgBot
 
-	registerHandlers(bot.bot, deps)
+	bot.registerHandlers()
 
-	bot.logger.Log("bot started")
+	bot.logger.Log("Bot started")
 
 	bot.bot.Start(bot.shutdownContext)
 
 	select {
-	case <-deps.ShutdownContext.Done():
-		bot.logger.Log("Shutting down bot gracefully...")
+	case <-bot.shutdownContext.Done():
+		bot.logger.Log("Shutting down Bot gracefully...")
 	}
 
-	bot.logger.Log("bot stopped")
+	bot.logger.Log("Bot stopped")
 }
 
-func registerHandlers(bot *tg_bot.Bot, deps botDependencies) {
-	bot.RegisterHandler(
+func (bot *bot) registerHandlers() {
+	if bot.bot == nil {
+		panic("cannot register handlers without bot instance")
+	}
+
+	bot.bot.RegisterHandler(
 		tg_bot.HandlerTypeMessageText,
 		constants.CommandStart,
 		tg_bot.MatchTypeExact,
-		deps.CommandsHandler.Start,
+		bot.commandsHandler.Start,
 	)
 
-	bot.RegisterHandler(
+	bot.bot.RegisterHandler(
 		tg_bot.HandlerTypeCallbackQueryData,
 		constants.CallbackDataMenuPrefix,
 		tg_bot.MatchTypePrefix,
-		deps.MenuHandler.Handle,
+		bot.menuHandler.Handle,
 	)
-	bot.RegisterHandler(
+
+	bot.bot.RegisterHandler(
 		tg_bot.HandlerTypeCallbackQueryData,
 		constants.CallbackDataUserAgreementPrefix,
 		tg_bot.MatchTypePrefix,
-		deps.UserAgreementHandler.Handle,
+		bot.userAgreementHandler.Handle,
 	)
 }

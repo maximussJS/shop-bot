@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func (c *Config) getRequiredString(key string) string {
+func (c *config) getRequiredString(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		c.logger.Error(`Environment variable "` + key + `" not found`)
@@ -17,7 +17,17 @@ func (c *Config) getRequiredString(key string) string {
 	return value
 }
 
-func (c *Config) getOptionalInt(key string, defaultValue int) int {
+func (c *config) getOptionalString(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		c.logger.Warn(`Environment variable "` + key + `" not found, used default ` + defaultValue)
+		value = defaultValue
+	}
+
+	return value
+}
+
+func (c *config) getOptionalInt(key string, defaultValue int) int {
 	value := os.Getenv(key)
 
 	if value == "" {
@@ -32,7 +42,22 @@ func (c *Config) getOptionalInt(key string, defaultValue int) int {
 	return valueInt
 }
 
-func (c *Config) getOptionalBool(key string, defaultValue bool) bool {
+func (c *config) getOptionalInt64(key string, defaultValue int64) int64 {
+	value := os.Getenv(key)
+
+	if value == "" {
+		c.logger.Warn(fmt.Sprintf(`Environment variable "%s" not found, used default %d`, key, defaultValue))
+		return defaultValue
+	}
+
+	valueInt, err := strconv.ParseInt(value, 10, 64)
+
+	utils.PanicIfError(err)
+
+	return valueInt
+}
+
+func (c *config) getOptionalBool(key string, defaultValue bool) bool {
 	value := os.Getenv(key)
 
 	if value == "" {

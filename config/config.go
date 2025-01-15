@@ -19,7 +19,11 @@ type IConfig interface {
 	PostgresDSN() string
 	RunMigrations() bool
 
+	HttpPort() string
+	MaxJSONBodySizeInBytes() int64
 	RequestTimeout() time.Duration
+
+	AuthToken() string
 }
 
 type configDependencies struct {
@@ -28,7 +32,7 @@ type configDependencies struct {
 	Logger logger.ILogger `name:"Logger"`
 }
 
-type Config struct {
+type config struct {
 	logger logger.ILogger
 
 	appEnv constants.AppEnv
@@ -40,15 +44,19 @@ type Config struct {
 	postgresDsn   string
 	runMigrations bool
 
+	httpPort                string
+	maxJSONBodySizeInBytes  int64
 	requestTimeoutInSeconds int
+
+	authToken string
 }
 
-func NewConfig(deps configDependencies) *Config {
+func NewConfig(deps configDependencies) *config {
 	_logger := deps.Logger
 
 	godotenv.Load() // ignore error, because in deployment we pass all env variables via docker run command
 
-	config := &Config{
+	config := &config{
 		logger: _logger,
 	}
 
@@ -64,34 +72,49 @@ func NewConfig(deps configDependencies) *Config {
 	}
 
 	config.botToken = config.getRequiredString("BOT_TOKEN")
+	config.authToken = config.getRequiredString("AUTH_TOKEN")
 	config.postgresDsn = config.getRequiredString("POSTGRES_DSN")
 	config.runMigrations = config.getOptionalBool("RUN_MIGRATIONS", false)
 	config.errorStackTraceSizeInKb = config.getOptionalInt("ERROR_STACK_TRACE_SIZE_IN_KB", 4)
+	config.httpPort = config.getOptionalString("HTTP_PORT", ":8080")
+	config.maxJSONBodySizeInBytes = config.getOptionalInt64("MAX_JSON_BODY_SIZE_IN_BYTES", 1048576)
 	config.requestTimeoutInSeconds = config.getOptionalInt("REQUEST_TIMEOUT_IN_SECONDS", 15)
 
 	return config
 }
 
-func (c *Config) AppEnv() constants.AppEnv {
+func (c *config) AppEnv() constants.AppEnv {
 	return c.appEnv
 }
 
-func (c *Config) BotToken() string {
+func (c *config) BotToken() string {
 	return c.botToken
 }
 
-func (c *Config) ErrorStackTraceSizeInKb() int {
+func (c *config) ErrorStackTraceSizeInKb() int {
 	return c.errorStackTraceSizeInKb
 }
 
-func (c *Config) PostgresDSN() string {
+func (c *config) PostgresDSN() string {
 	return c.postgresDsn
 }
 
-func (c *Config) RunMigrations() bool {
+func (c *config) RunMigrations() bool {
 	return c.runMigrations
 }
 
-func (c *Config) RequestTimeout() time.Duration {
+func (c *config) RequestTimeout() time.Duration {
 	return time.Duration(c.requestTimeoutInSeconds) * time.Second
+}
+
+func (c *config) MaxJSONBodySizeInBytes() int64 {
+	return c.maxJSONBodySizeInBytes
+}
+
+func (c *config) HttpPort() string {
+	return c.httpPort
+}
+
+func (c *config) AuthToken() string {
+	return c.authToken
 }

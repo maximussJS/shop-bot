@@ -7,13 +7,25 @@ import (
 	"os/signal"
 	"shop-bot/di"
 	"shop-bot/internal/bot"
+	"shop-bot/internal/http"
 	"shop-bot/utils"
 	"sync"
 	"syscall"
 )
 
-func startBot(container *dig.Container) {
-	err := container.Invoke(bot.StartBot)
+type runAppDependencies struct {
+	dig.In
+
+	Bot        bot.IBot         `name:"Bot"`
+	HttpServer http.IHttpServer `name:"HttpServer"`
+}
+
+func start(container *dig.Container) {
+	err := container.Invoke(func(deps runAppDependencies) {
+		go deps.Bot.Start()
+
+		deps.HttpServer.Start()
+	})
 
 	utils.PanicIfError(err)
 }
@@ -46,8 +58,8 @@ func main() {
 
 	wg.Add(1)
 
-	go startBot(container)
-	
+	go start(container)
+
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 

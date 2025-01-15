@@ -24,23 +24,23 @@ type IUserRepository interface {
 	DeleteById(ctx context.Context, id int64)
 }
 
-type UserRepository struct {
+type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(deps userRepositoryDependencies) *UserRepository {
+func NewUserRepository(deps userRepositoryDependencies) *userRepository {
 	if deps.Config.RunMigrations() {
 		err := deps.DB.AutoMigrate(&models.User{})
 
 		utils.PanicIfError(err)
 	}
 
-	return &UserRepository{
+	return &userRepository{
 		db: deps.DB,
 	}
 }
 
-func (r *UserRepository) Create(ctx context.Context, user models.User) int64 {
+func (r *userRepository) Create(ctx context.Context, user models.User) int64 {
 	err := r.db.WithContext(ctx).Create(&user).Error
 
 	utils.PanicIfNotContextError(err)
@@ -48,7 +48,7 @@ func (r *UserRepository) Create(ctx context.Context, user models.User) int64 {
 	return user.Id
 }
 
-func (r *UserRepository) GetById(ctx context.Context, id int64) *models.User {
+func (r *userRepository) GetById(ctx context.Context, id int64) *models.User {
 	var user models.User
 	err := r.db.WithContext(ctx).Clauses(clause.Returning{}).Where("id = ?", id).First(&user).Error
 
@@ -61,13 +61,13 @@ func (r *UserRepository) GetById(ctx context.Context, id int64) *models.User {
 	return &user
 }
 
-func (r *UserRepository) UpdateById(ctx context.Context, id int64, user models.User) {
+func (r *userRepository) UpdateById(ctx context.Context, id int64, user models.User) {
 	err := r.db.WithContext(ctx).Model(&models.User{}).Where("id = ?", id).Updates(&user).Error
 
 	utils.PanicIfNotContextError(err)
 }
 
-func (r *UserRepository) DeleteById(ctx context.Context, id int64) {
+func (r *userRepository) DeleteById(ctx context.Context, id int64) {
 	err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&models.User{}).Error
 
 	utils.PanicIfNotContextError(err)

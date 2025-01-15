@@ -3,11 +3,15 @@ package di
 import (
 	"go.uber.org/dig"
 	"shop-bot/config"
+	"shop-bot/controllers"
 	"shop-bot/handlers"
 	"shop-bot/handlers/callback_queries"
+	"shop-bot/internal/bot"
 	"shop-bot/internal/db"
+	"shop-bot/internal/http"
 	"shop-bot/internal/logger"
 	"shop-bot/repositories"
+	"shop-bot/router"
 	"shop-bot/services"
 	"shop-bot/utils"
 )
@@ -19,6 +23,9 @@ func BuildContainer() *dig.Container {
 	c = AppendDependenciesToContainer(c, getRepositoriesDependencies())
 	c = AppendDependenciesToContainer(c, getServicesDependencies())
 	c = AppendDependenciesToContainer(c, getHandlersDependencies())
+	c = AppendDependenciesToContainer(c, getControllersDependencies())
+	c = AppendDependenciesToContainer(c, getBotDependencies())
+	c = AppendDependenciesToContainer(c, getHttpServerDependencies())
 
 	return c
 }
@@ -71,6 +78,16 @@ func getRepositoriesDependencies() []Dependency {
 			Interface:   new(repositories.IUserRepository),
 			Token:       "UserRepository",
 		},
+		{
+			Constructor: repositories.NewCategoryRepository,
+			Interface:   new(repositories.ICategoryRepository),
+			Token:       "CategoryRepository",
+		},
+		{
+			Constructor: repositories.NewCategoryItemRepository,
+			Interface:   new(repositories.ICategoryItemRepository),
+			Token:       "CategoryItemRepository",
+		},
 	}
 }
 
@@ -110,6 +127,46 @@ func getHandlersDependencies() []Dependency {
 			Constructor: callback_queries.NewUserAgreementHandler,
 			Interface:   new(callback_queries.IUserAgreementHandler),
 			Token:       "UserAgreementHandler",
+		},
+	}
+}
+
+func getControllersDependencies() []Dependency {
+	return []Dependency{
+		{
+			Constructor: controllers.NewCategoryController,
+			Interface:   new(controllers.ICategoryController),
+			Token:       "CategoryController",
+		},
+		{
+			Constructor: controllers.NewCategoryItemController,
+			Interface:   new(controllers.ICategoryItemController),
+			Token:       "CategoryItemController",
+		},
+	}
+}
+
+func getHttpServerDependencies() []Dependency {
+	return []Dependency{
+		{
+			Constructor: router.NewRouter,
+			Interface:   new(router.IRouter),
+			Token:       "Router",
+		},
+		{
+			Constructor: http.NewHttpServer,
+			Interface:   new(http.IHttpServer),
+			Token:       "HttpServer",
+		},
+	}
+}
+
+func getBotDependencies() []Dependency {
+	return []Dependency{
+		{
+			Constructor: bot.NewBot,
+			Interface:   new(bot.IBot),
+			Token:       "Bot",
 		},
 	}
 }
